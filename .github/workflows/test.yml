@@ -13,20 +13,29 @@ on:
 env:
   FORCE_COLOR: 2
 
+permissions: {}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Use Node.js
         uses: actions/setup-node@v7
         with:
           node-version-file: package.json
-      - run: npm i --ignore-scripts
+          package-manager-cache: false
+      - run: npm install --ignore-scripts
       - run: npm run check
 
   test:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
 
     strategy:
       fail-fast: false
@@ -36,25 +45,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: npm i --ignore-scripts
+          package-manager-cache: false
+      - run: npm install --ignore-scripts
       - run: npm run test:node-test
-      - uses: codecov/codecov-action@v7
+      - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
         if: ${{ github.event_name == 'pull_request' }}
         with:
           flags: ${{ matrix.os }}-${{ matrix.node }}
 
   automerge:
     needs: [lint, test]
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github_actions/actions/') }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: write
     steps:
-      - uses: fastify/github-action-merge-dependabot@v3
-        if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' && contains(github.head_ref, 'dependabot/github_actions') }}
-        with:
-          github-token: ${{ secrets.github_token }}
+      - name: Merge first-party GitHub Actions Dependabot PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR_URL" --squash --delete-branch
