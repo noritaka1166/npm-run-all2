@@ -55,7 +55,6 @@
     "@types/memorystream": "^0.3.4",
     "@types/node": "^26.0.0",
     "@types/picomatch": "^4.0.3",
-    "@types/shell-quote": "^1.7.5",
     "@voxpelli/tsconfig": "^16.0.0",
     "eslint": "^9.6.0",
     "installed-check": "^10.0.1",
